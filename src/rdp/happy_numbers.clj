@@ -19,7 +19,7 @@
        (map square)
        (reduce + 0)))
 
-(defn- happy-number?
+(defn happy-number?
   [num]
   (loop [num num
          generated-nums #{}]
@@ -30,9 +30,11 @@
         (contains? generated-nums result) false
         :else (recur result (conj generated-nums result))))))
 
-(defn happy-numbers
-  ([] (happy-numbers 1))
-  ([i] 
-   (let [n (first (filter happy-number? (iterate inc i)))]
-     (cons n (lazy-seq (happy-numbers (inc n)))))))
+(def happy-numbers (filter happy-number? (iterate inc 1)))
+
+;; (defn happy-numbers
+;;   ([] (happy-numbers 1))
+;;   ([i] 
+;;    (let [n (first (filter happy-number? (iterate inc i)))]
+;;      (cons n (lazy-seq (happy-numbers (inc n)))))))
 
