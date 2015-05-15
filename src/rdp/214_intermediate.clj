@@ -72,7 +72,15 @@
     (doseq [line sorted]
       (println (key line) (val line)))))
 
+;; (defn -main 
+;;   ([] (-main 0))
+;;   ([index] 
+;;    (time (solve (input-files (Integer/parseInt index))))))
+
 (defn -main 
-  ([] (-main 0))
+  ([] (-main "0"))
   ([index] 
-   (time (solve (input-files (Integer/parseInt index))))))
+   (time 
+    (binding [*unchecked-math* :warn-on-boxed
+              *warn-on-reflection* true] 
+      (solve (input-files (Integer/parseInt index)))))))
