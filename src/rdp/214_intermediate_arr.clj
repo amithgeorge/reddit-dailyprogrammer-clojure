@@ -23,13 +23,14 @@
 (defn- parse-inputs
   []
   (let [canvas (apply ->Canvas (read-line-nums))]
-    (loop [papers (list (make-paper (:width canvas) (:height canvas)))]
+    (loop [papers (list (make-paper (:width canvas) (:height canvas)))
+           colors #{0}]
       (if-let [values (read-line-nums)]
-        (recur (conj papers (make-paper values)))
+        (recur (conj papers (make-paper values))
+               (conj colors (first values)))
         {:papers (into [] papers)
-         :canvas canvas
-         :canvas-width (:width canvas)
-         :canvas-height (:height canvas)}))))
+         :colors colors
+         :canvas canvas}))))
 
 (defn- read-input-file 
   [file-name]
@@ -68,6 +69,20 @@
           ^long x (range (:width canvas))]
       [x y]))))
 
+(defn- visible-color-frequencies-arr
+  [{:keys [colors canvas papers]}]
+  (let [colorCounts (long-array (count colors))] 
+    (reduce 
+     (fn [_ ^longs coord]
+       (if-let [color (visible-color coord papers)]
+         (aset-long colorCounts color (+ 1 (aget colorCounts color)))
+         _))
+     -1
+     (for [^long y (range (:height canvas))
+           ^long x (range (:width canvas))]
+       [x y]))
+    colorCounts))
+
 (defn- solve
   [input-file]
   (let [input (read-input-file input-file)
@@ -76,10 +91,19 @@
     (doseq [line sorted]
       (println (key line) (val line)))))
 
+(defn- solve-arr
+  [input-file]
+  (let [input (read-input-file input-file)
+        colorCounts (visible-color-frequencies-arr input)]
+    (doseq [line (map vector (range) (seq colorCounts))]
+      (println (line 0) (line 1)))))
+
 (defn -main 
-  ([] (-main "0"))
-  ([index] 
+  ([] (-main "0" "false"))
+  ([index use-arrays] 
    (time 
     (binding [*unchecked-math* :warn-on-boxed
               *warn-on-reflection* true] 
-      (solve (input-files (Integer/parseInt index)))))))
+      (if-not (Boolean/parseBoolean use-arrays) 
+        (solve (input-files (Integer/parseInt index)))
+        (solve-arr (input-files (Integer/parseInt index))))))))
