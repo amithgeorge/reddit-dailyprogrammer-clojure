@@ -39,7 +39,8 @@
 
 (def ^:private input-files
   ["100rects100x100.in"
-   "100rects10Kx10K.in"])
+   "100rects10Kx10K.in"
+   "100rects3Kx3K.in"])
 
 (defn- covered?
   [[canvas-x canvas-y] {:keys [x1 y1 x2 y2]}]
