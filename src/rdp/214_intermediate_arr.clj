@@ -81,7 +81,7 @@
      (for [^long y (range (:height canvas))
            ^long x (range (:width canvas))]
        [x y]))
-    colorCounts))
+    (zipmap (range) colorCounts)))
 
 (defn- solve
   [input-file]
@@ -94,9 +94,10 @@
 (defn- solve-arr
   [input-file]
   (let [input (read-input-file input-file)
-        colorCounts (visible-color-frequencies-arr input)]
-    (doseq [line (map vector (range) (seq colorCounts))]
-      (println (line 0) (line 1)))))
+        color-map (visible-color-frequencies-arr input)
+        sorted (sort-by key (remove #(zero? (val %1)) color-map))]
+    (doseq [line sorted]
+      (println (key line) (val line)))))
 
 (defn -main 
   ([] (-main "0" "false"))
