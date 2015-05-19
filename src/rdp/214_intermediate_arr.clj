@@ -48,8 +48,14 @@
 
 (defn- covered?
   [[^long canvas-x ^long canvas-y] paper]
-  (and (<= (:x1 paper) canvas-x (:x2 paper)) 
-       (<= (:y1 paper) canvas-y (:y2 paper))))
+  (let [^long x1 (:x1 paper)
+        ^long x2 (:x2 paper)
+        ^long y1 (:y1 paper)
+        ^long y2 (:y2 paper)]
+    (and (<= x1 canvas-x)
+         (<= canvas-x x2)
+         (<= y1 canvas-y)
+         (<= canvas-y y2))))
 
 (defn- visible-color
   [^longs coord papers]
@@ -75,7 +81,7 @@
     (reduce 
      (fn [_ ^longs coord]
        (if-let [color (visible-color coord papers)]
-         (aset-long colorCounts color (+ 1 (aget colorCounts color)))
+         (aset colorCounts color (+ 1 (aget colorCounts color)))
          _))
      -1
      (for [^long y (range (:height canvas))
