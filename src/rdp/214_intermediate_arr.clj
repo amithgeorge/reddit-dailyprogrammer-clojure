@@ -47,27 +47,27 @@
    "100rects3Kx3K.in"])
 
 (defn- covered?
-  [[^long canvas-x ^long canvas-y] paper]
-  (let [^long x1 (:x1 paper)
-        ^long x2 (:x2 paper)
-        ^long y1 (:y1 paper)
-        ^long y2 (:y2 paper)]
+  [^long canvas-x ^long canvas-y ^Paper paper]
+  (let [x1 (.x1 paper)
+        x2 (.x2 paper)
+        y1 (.y1 paper)
+        y2 (.y2 paper)]
     (and (<= x1 canvas-x)
          (<= canvas-x x2)
          (<= y1 canvas-y)
          (<= canvas-y y2))))
 
 (defn- visible-color
-  [^longs coord papers]
-  (some #(when (covered? coord %1) (:color %1))
+  [^long x ^long y papers]
+  (some #(when (covered? x y %1) (:color %1))
         papers))
 
 (defn- visible-color-frequencies
   [{:keys [canvas papers]}]
   (persistent!
    (reduce 
-    (fn [acc ^longs coord]
-      (if-let [color (visible-color coord papers)]
+    (fn [acc [^long x ^long y]]
+      (if-let [color (visible-color x y papers)]
         (assoc! acc color (inc (get acc color 0)))
         acc))
     (transient {})
@@ -79,8 +79,8 @@
   [{:keys [colors canvas papers]}]
   (let [colorCounts (long-array (count colors))] 
     (reduce 
-     (fn [_ ^longs coord]
-       (if-let [color (visible-color coord papers)]
+     (fn [_ [^long x ^long y]]
+       (if-let [color (visible-color x y papers)]
          (aset colorCounts color (+ 1 (aget colorCounts color)))
          _))
      -1
