@@ -17,7 +17,7 @@
 
 (defn- make-paper
   ([^long w ^long h] (make-paper [0 0 0 w h]))
-  ([^longs [color x y w h]]
+  ([^longs [color ^long x ^long y ^long w ^long h]]
    (Paper. color x y (+ x w -1) (+ y h -1))))
 
 (defn- parse-inputs
@@ -75,16 +75,16 @@
               (loop [x 0 
                      acc acc]
                 (if (< x width)
-                  (recur (+ 1 x)
+                  (recur (inc x)
                          (if-let [color (visible-color x y papers)]
-                           (assoc! acc color (+ 1 (get acc color 0)))
+                           (assoc! acc color (inc ^long (get acc color 0)))
                            acc))
                   acc))]
-          (recur (+ 1 y) acc))
+          (recur (inc y) acc))
         (persistent! acc)))))
 
 (defn- visible-color-frequencies-arr
-  [{:keys [colors canvas papers]}]
+  [{:keys [colors ^Canvas canvas papers]}]
   (let [colorCounts (long-array (count colors))
         height (.height canvas)
         width (.width canvas)] 
@@ -95,9 +95,9 @@
             (if (< x width)
               (if-let [color (visible-color x y papers)]
                 (do
-                  (aset colorCounts color (+ 1 (aget colorCounts color)))
-                  (recur (+ 1 x))))))
-          (recur (+ 1 y)))))
+                  (aset colorCounts color (inc (aget colorCounts color)))
+                  (recur (inc x))))))
+          (recur (inc y)))))
     (zipmap (range) colorCounts)))
 
 (defn- solve
