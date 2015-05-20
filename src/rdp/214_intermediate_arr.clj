@@ -1,6 +1,9 @@
 (ns rdp.214-intermediate-arr
   (:require [clojure.java.io :as io]))
 
+(set! *unchecked-math* :warn-on-boxed)
+(set! *warn-on-reflection* true)
+
 (defn- read-line-nums
   ([] (read-line-nums (read-line) #(Long/parseLong %1)))
   ([input-line parse-fn]
@@ -64,8 +67,29 @@
             (.color paper)))
         papers))
 
+;; (defn- visible-color
+;;   [^long x ^long y papers]
+;;   (loop [papers papers] 
+;;     (if (empty? papers)
+;;       nil
+;;       (let [^Paper paper (first papers)]
+;;         (if (covered? x y paper)
+;;           (.color paper)
+;;           (recur (rest papers)))))))
+
+(defn- visible-color-arr
+  [^long x ^long y ^"[Lrdp.214_intermediate_arr.Paper;" papers]
+  (let [len (alength papers)] 
+    (loop [i 0]
+      (if (< i len)
+        (let [p ^Paper (aget papers i)] 
+          (if (covered? x y p)
+            (.color p)
+            (recur (inc i))))  
+        nil))))
+
 (defn- visible-color-frequencies
-  [{:keys [canvas papers]}]
+  [{:keys [^Canvas canvas papers]}]
   (let [height (.height canvas)
         width (.width canvas)] 
     (loop [y 0
@@ -87,13 +111,14 @@
   [{:keys [colors ^Canvas canvas papers]}]
   (let [colorCounts (long-array (count colors))
         height (.height canvas)
-        width (.width canvas)] 
+        width (.width canvas)
+        papers (into-array Paper papers)] 
     (loop [y 0]
       (if (< y height)
         (do 
           (loop [x 0]
             (if (< x width)
-              (if-let [color (visible-color x y papers)]
+              (if-let [color (visible-color-arr x y papers)]
                 (do
                   (aset colorCounts color (inc (aget colorCounts color)))
                   (recur (inc x))))))
@@ -112,7 +137,7 @@
   [input-file]
   (let [input (read-input-file input-file)
         color-map (visible-color-frequencies-arr input)
-        sorted (sort-by key (remove #(zero? (val %1)) color-map))]
+        sorted (sort-by key (remove #(zero? ^long (val %1)) color-map))]
     (doseq [line sorted]
       (println (key line) (val line)))))
 
@@ -120,8 +145,6 @@
   ([] (-main "0" "false"))
   ([index use-arrays] 
    (time 
-    (binding [*unchecked-math* :warn-on-boxed
-              *warn-on-reflection* true] 
-      (if-not (Boolean/parseBoolean use-arrays) 
-        (solve (input-files (Integer/parseInt index)))
-        (solve-arr (input-files (Integer/parseInt index))))))))
+    (if-not (Boolean/parseBoolean use-arrays) 
+      (solve (input-files (Integer/parseInt index)))
+      (solve-arr (input-files (Integer/parseInt index)))))))
