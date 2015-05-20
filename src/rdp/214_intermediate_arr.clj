@@ -59,34 +59,45 @@
 
 (defn- visible-color
   [^long x ^long y papers]
-  (some #(when (covered? x y %1) (:color %1))
+  (some (fn [^Paper paper] 
+          (when (covered? x y paper)
+            (.color paper)))
         papers))
 
 (defn- visible-color-frequencies
   [{:keys [canvas papers]}]
-  (persistent!
-   (reduce 
-    (fn [acc [^long x ^long y]]
-      (if-let [color (visible-color x y papers)]
-        (assoc! acc color (inc (get acc color 0)))
-        acc))
-    (transient {})
-    (for [^long y (range (:height canvas))
-          ^long x (range (:width canvas))]
-      [x y]))))
+  (let [height (.height canvas)
+        width (.width canvas)] 
+    (loop [y 0
+           acc (transient {})]
+      (if (< y height)
+        (let [acc 
+              (loop [x 0 
+                     acc acc]
+                (if (< x width)
+                  (recur (+ 1 x)
+                         (if-let [color (visible-color x y papers)]
+                           (assoc! acc color (+ 1 (get acc color 0)))
+                           acc))
+                  acc))]
+          (recur (+ 1 y) acc))
+        (persistent! acc)))))
 
 (defn- visible-color-frequencies-arr
   [{:keys [colors canvas papers]}]
-  (let [colorCounts (long-array (count colors))] 
-    (reduce 
-     (fn [_ [^long x ^long y]]
-       (if-let [color (visible-color x y papers)]
-         (aset colorCounts color (+ 1 (aget colorCounts color)))
-         _))
-     -1
-     (for [^long y (range (:height canvas))
-           ^long x (range (:width canvas))]
-       [x y]))
+  (let [colorCounts (long-array (count colors))
+        height (.height canvas)
+        width (.width canvas)] 
+    (loop [y 0]
+      (if (< y height)
+        (do 
+          (loop [x 0]
+            (if (< x width)
+              (if-let [color (visible-color x y papers)]
+                (do
+                  (aset colorCounts color (+ 1 (aget colorCounts color)))
+                  (recur (+ 1 x))))))
+          (recur (+ 1 y)))))
     (zipmap (range) colorCounts)))
 
 (defn- solve
