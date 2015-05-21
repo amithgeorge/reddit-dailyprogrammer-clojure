@@ -1,5 +1,6 @@
 (ns rdp.215-intermediate
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io])
+  (:gen-class))
 
 (set! *unchecked-math* :warn-on-boxed)
 (set! *warn-on-reflection* true)
@@ -13,7 +14,7 @@
 
 (defn- parse-inputs
   []
-  (println "parsing inputs")
+  ;; (println "parsing inputs")
   (let [[^long wires-count ^long comparators-count] (read-line-longs)] 
     (loop [endpoints []
            i 0]
