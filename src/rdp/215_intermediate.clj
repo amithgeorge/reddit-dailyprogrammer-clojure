@@ -81,7 +81,7 @@
 
 (defn- test-sorting-network
   [sorting-network input]
-  (= (sort input) (sorting-network input)))
+  (apply <= (sorting-network input)))
 
 (def input-file-names 
   ["215_intermediate_sample_1.txt"
@@ -118,4 +118,4 @@
 
 
 ;; (-main "3" "true")
-;; Elapsed time: 643ms
+;; Elapsed time: 483ms
