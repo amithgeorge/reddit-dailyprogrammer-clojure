@@ -2,113 +2,103 @@
 
 ;; https://www.reddit.com/r/dailyprogrammer/comments/3fva66/20150805_challenge_226_intermediate_connect_four/
 
-(def sticks [:a :b :c :d :e :f :g])
-(def sticks-set (set sticks))
-(def max-slots-per-stick 6)
+(def ^:private sticks [:a :b :c :d :e :f :g])
+(def ^:private sticks-set (set sticks))
+(def ^:private max-slots-per-stick 6)
 
-;; There are seven sticks. Each stick has 6 slots. Players place discs on a stick. The disc occupies the next available slot. The winner is the player who places 4 discs that can be connected in a straight line 
+;;  There are seven sticks. Each stick has 6 slots. 
+;;  Players place discs on a stick.
+;;  The disc occupies the next available slot. The winner is the player who 
+;;  places 4 discs that can be connected in a straight line 
 ;;  - vertically (on 4 consecutive slots on same stick), 
 ;;  - horizontally (4 on consecutive sticks, but at same slot) or
-;;  - diagonally (any combination of 4 consecutive slots and 4 consecutive sticks).
+;;  - diagonally (any combination of 4 consecutive slots and 4 consecutive sticks)
 
 
-(defn- previous-slots 
-  "Returns the 3 slots prior to `slot`. May include out of bound slots."
+(defn- consecutive-4-slots 
   [slot]
-  (take 3 (drop 1 (iterate dec slot))))
+  (->> (partition 4 1 (range 0 max-slots-per-stick))
+       (filter #(some #{slot} %1))))
 
-(defn- next-slots 
-  "Returns the 3 slots after `slot`. May include out of bound slots."
-  [slot]
-  (take 3 (drop 1 (iterate inc slot))))
-
-(defn- previous-sticks 
-  "Returns the 3 sequential sticks before to `stick`. The order is the reverse of the order in `sticks`. If `stick` is among the first 3 sticks, then returns empty vector.
-  (previous-sticks :d) => [:c :b :a]
-  (previous-sticks :c) => []"
+(defn- consecutive-4-sticks
   [stick]
-  (if (#{:d :e :f :g} stick) 
-    (->> sticks
-         (take-while #(not (= %1 stick)))
-         (take-last 3)
-         (reverse)) 
-    []))
+  (->> (partition 4 1 sticks)
+       (filter #(some #{stick} %1))))
 
-(defn- next-sticks 
-  "Returns the 3 sticks appearing after `stick`. Returns in the same order as in `sticks`.
-  If `stick` is among the last 3 sticks, then returns empty vector.
-  (next-sticks :d) => [:e :f :g]"
-  [stick]
-  (if (#{:a :b :c :d} stick) 
-    (->> sticks 
-         (drop-while #(not (= %1 stick)))
-         (drop 1) 
-         (take 3))
-    []))
 
-(defn- vertically-connected-discs 
-  "A disc is represented by a pair of stick and slot. 
-  Returns all possible sequences of 4 discs having same stick and sequential slots.
-  May contain invalid discs."
-  [[stick slot]]
-  (->> [next-slots previous-slots] 
-       (map #(%1 slot))
-       (map #(map vector (repeat stick) %1))
-       (remove empty?)
-       (map #(conj %1 [stick slot]))))
+(defn- connected-horizontally 
+  "4 consecutive sticks, same slot"
+  [[_ slot] seq-sticks]
+  (->> seq-sticks
+       (map #(map (fn [stick] [stick slot]) %1))
+       ;; (map #(do (println "h - " %1) %1))
+;;
+       ))
 
-(defn- horizontally-connected-discs 
-  "A disc is represented by a pair of stick and slot. 
-  Returns all possible sequences of 4 discs having same slot and resting on consecutive sticks.
-  May contain invalid discs."
-  [[stick slot]]
-  (let [next-sticks (next-sticks stick) 
-        prev-sticks (previous-sticks stick)] 
-    (->> [next-sticks prev-sticks]
-         (map #(map vector %1 (repeat slot)))
-         (remove empty?)
-         (map #(conj %1 [stick slot])))))
+(defn- connected-vertically
+  "Same stick, 4 consecutive slots"
+  [[stick _] seq-slots]
+  (->> seq-slots
+       (map #(map (fn [slot] [stick slot]) %1))
+       ;; (map #(do (println "v - " %1) %1))
+;;        
+       ))
 
-(defn- diagonally-connected-discs 
-  "A disc is represented by a pair of stick and slot. 
-  Returns all possible sequences of 4 discs that can be considered as diagonally connected.
-  May contain invalid discs."
-  [[stick slot]]
-  (let [prev-sticks (previous-sticks stick)
-        next-sticks (next-sticks stick)
-        previous-indices (previous-slots slot)
-        next-indices (next-slots slot)]
-    (->>
-     [(map vector prev-sticks previous-indices)
-      (map vector prev-sticks next-indices)
-      (map vector next-sticks previous-indices)
-      (map vector next-sticks next-indices)]
-     (remove empty?)
-     (map #(conj %1 [stick slot])))))
+(defn- connected-diagonally
+  "Interleave the consecutive slots in `seq-slots` with 
+  its reverse. This ensures that we get both ascending
+  and descending diagonal lines. 
+  Join all consecutive sticks with consecutive slots
+  that gives all diagonal lines with atleast one disc
+  either in the right slot or right stick.
+  Filter that to get lines with the disc in both the
+  right stick and right slot."  
+  [disc seq-sticks seq-slots]
+  (let [seq-slots (interleave seq-slots (map reverse seq-slots))]
+    (->> (mapcat (fn [sticks-seq] 
+                   (map #(map vector sticks-seq %1) seq-slots))
+                 seq-sticks)
+         (filter #(some #{disc} %1))
+         (map #(do (println "d - " %1) %1))
+;;           
+         )))
 
-(defn- possibly-connected-discs 
-  "Returns all vertically, horizontally and diagonally connected discs for `disc`. Might include discs that haven't been placed yet."
+(defn- all-connected-discs 
   [[stick slot :as disc]]
-  {:pre [(sticks-set stick) 
-         (< -1 slot max-slots-per-stick)]}
-  (concat (vertically-connected-discs disc) 
-          (horizontally-connected-discs disc) 
-          (diagonally-connected-discs disc)))
+  (let [seq-slots (consecutive-4-slots slot)
+        seq-sticks (consecutive-4-sticks stick)]
+    (concat (connected-horizontally disc seq-sticks) 
+            (connected-vertically disc seq-slots)
+            (connected-diagonally disc seq-sticks seq-slots))))
 
-(defn connected-four? 
-  "Returns first 4 connected discs. `discs` is a set of all discs that have been placed by a given player. For every `disc` in `discs`, it generates sequences of 4 connected discs. It selects the first sequence for which all its discs have already been placed, ie they exist in the set `discs`."
-  [discs]
-  {:pre [(set? discs)]}
-  (->> discs
-       (mapcat possibly-connected-discs) 
-       (filter #(every? discs %1))
-       (first)))
+(defn- is-disc?
+  [[stick slot :as disc]]
+  (and (sticks-set stick)
+       (< -1 slot max-slots-per-stick)))
+
+(defn- connected-four? 
+  "Returns first 4 connected discs. `discs` is a set of all 
+  discs that have been placed by a given player. `disc` is 
+  the latest disc placed. All connected discs sequences 
+  containing `disc` is generated. It selects the first sequence
+  for which all discs have already been placed, ie exists 
+  in `discs`."
+  ([discs disc]
+   {:pre [(set? discs) (is-disc? disc)]}
+   (when (<= 4 (count discs))
+     (->> disc
+          (all-connected-discs)
+          (filter #(every? discs %1))
+          (first)))))
 
 
 (defn- winner? 
-  "Checks if player has satisfied winning condition. If yes, updates game state with winning stats and marks game as over. Returns game state."
+  "Checks if player has satisfied winning condition. If yes,
+  updates game state with winning stats and marks game as
+  over. Returns game state."
   [state player]
-  (when-let [discs (connected-four? (get-in state [player :discs]))]
+  (when-let [discs (connected-four? (get-in state [player :discs]) 
+                                    (get-in state [player :latest-disc]))]
     (assoc state 
            :winner {:moves-count (count (:moves state))
                     :line (sort discs)
@@ -121,10 +111,12 @@
   (let [disc [stick (get-in state [:next-stick-index stick] 0)]]
     (-> state
         (update-in [player :discs] conj disc)
+        (assoc-in [player :latest-disc] disc)
         (update-in [:next-stick-index stick] (fnil inc 0)))))
 
 (defn- process-players-move 
-  "Processes move for both players and determines winner. Returns game state."
+  "Processes move for both players and determines winner. 
+  Returns game state."
   [state move]
   (let [old-state state
         state (->> old-state
@@ -159,7 +151,7 @@
       {:p1 (stick-char->stick (parts 0))
        :p2 (stick-char->stick (parts 1))})))
 
-(def initial-game-state 
+(def ^:private initial-game-state 
   {:p1 {:name "X" :discs #{}}
    :p2 {:name "O" :discs #{}}
    :moves []
@@ -167,7 +159,7 @@
    :winner nil
    :next-stick-index {:a 0 :b 0 :c 0 :d 0 :e 0 :f 0 :g 0}})
 
-(defn game-loop [input-str] 
+(defn- game-loop [input-str] 
   (with-in-str input-str
     (loop [state initial-game-state]
       (let [move (read-players-move)]
@@ -188,7 +180,7 @@
                      moves-count 
                      (clojure.string/join " " discs)))))
 
-(def input-1 "C  d
+(def ^:private input-1 "C  d
 D  d
 D  b
 C  f
@@ -198,7 +190,7 @@ A  d
 G  e
 E  g")
 
-(def input-2 "D  d
+(def ^:private input-2 "D  d
 D  c    
 C  c    
 C  c
